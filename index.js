@@ -2,6 +2,9 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const fs = require('fs');
 
+const jsonData = require('./keywords.json');
+const keywords = jsonData.keywords;
+
 const url = 'https://whiskeyraiders.com/archive/';
 
 // Function to fetch HTML content of a webpage
@@ -84,19 +87,14 @@ async function scrapeWhiskeyDetails(link) {
 }
 
 // Function to extract keywords from the paragraph
-function extractKeywords(paragraph) {
-    // Define your list of keywords for each category
-    const noseKeywords = ['apple', 'caramel', 'chocolate', 'sherry'];
-    const tasteKeywords = ['vanilla', 'spice', 'oak', 'honey'];
-    const finishKeywords = ['long', 'smoky', 'peat', 'sweet'];
-
+function extractKeywords(paragraph) {    
     // Split the paragraph into words
     const words = paragraph.split(/\s+/);
 
     // Filter out the keywords
-    const nose = words.filter(word => noseKeywords.includes(word.toLowerCase()));
-    const taste = words.filter(word => tasteKeywords.includes(word.toLowerCase()));
-    const finish = words.filter(word => finishKeywords.includes(word.toLowerCase()));
+    const nose = words.filter(word => keywords.includes(word.toLowerCase()));
+    const taste = words.filter(word => keywords.includes(word.toLowerCase()));
+    const finish = words.filter(word => keywords.includes(word.toLowerCase()));
 
     return { nose, taste, finish };
 }
