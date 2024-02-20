@@ -14,6 +14,37 @@ async function fetchHTML(url) {
     }
 }
 
+// Function to scrape whiskey data from the webpage
+async function scrapeWhiskeyData() {
+    const html = await fetchHTML(url);
+    const $ = cheerio.load(html);
+
+    const whiskeyData = [];
+
+    // Find the table and iterate over each row
+    $('.o-archive__table .o-archive__table-row').each(async (index, element) => {
+        const cells = $(element).find('.o-archive__table-cell');
+        const rowData = {
+            name: $(cells[0]).text().trim(),
+            type: $(cells[1]).text().trim(),
+            rating: $(cells[2]).text().trim(),
+            link: $(cells[0]).find('a').attr('href') // Extract link from the first cell
+        };
+
+        // Scrape detailed information
+        const details = await scrapeWhiskeyDetails(rowData.link);
+        if (details) {
+            rowData.image = details.image;
+            rowData.stats = details.stats;
+            rowData.houseReviews = details.houseReviews;
+        }
+
+        whiskeyData.push(rowData);
+    });
+
+    return whiskeyData;
+}
+
 // Function to scrape detailed whiskey data from the whiskey's page
 async function scrapeWhiskeyDetails(link) {
     try {
@@ -68,37 +99,6 @@ function extractKeywords(paragraph) {
     const finish = words.filter(word => finishKeywords.includes(word.toLowerCase()));
 
     return { nose, taste, finish };
-}
-
-// Function to scrape whiskey data from the webpage
-async function scrapeWhiskeyData() {
-    const html = await fetchHTML(url);
-    const $ = cheerio.load(html);
-
-    const whiskeyData = [];
-
-    // Find the table and iterate over each row
-    $('.o-archive__table .o-archive__table-row').each(async (index, element) => {
-        const cells = $(element).find('.o-archive__table-cell');
-        const rowData = {
-            name: $(cells[0]).text().trim(),
-            type: $(cells[1]).text().trim(),
-            rating: $(cells[2]).text().trim(),
-            link: $(cells[0]).find('a').attr('href') // Extract link from the first cell
-        };
-
-        // Scrape detailed information
-        const details = await scrapeWhiskeyDetails(rowData.link);
-        if (details) {
-            rowData.image = details.image;
-            rowData.stats = details.stats;
-            rowData.houseReviews = details.houseReviews;
-        }
-
-        whiskeyData.push(rowData);
-    });
-
-    return whiskeyData;
 }
 
 async function main() {
