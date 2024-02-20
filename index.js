@@ -14,6 +14,7 @@ async function fetchHTML(url) {
         return response.data;
     } catch (error) {
         console.error('Error fetching the page:', error);
+        throw error;
     }
 }
 
@@ -25,13 +26,17 @@ async function scrapeWhiskeyData() {
     const whiskeyData = [];
 
     // Find the table and iterate over each row
-    $('.o-archive__table .o-archive__table-row').each(async (index, element) => {
-        const cells = $(element).find('.o-archive__table-cell');
+    const rows = $('.o-archive__table-body .o-archive__table-row');
+
+    // rows.length
+    for (let i = 0; i < 1; i++) {
+        const row = rows.eq(i);
+        const cells = row.find('.o-archive__table-cell');
         const rowData = {
-            name: $(cells[0]).text().trim(),
-            type: $(cells[1]).text().trim(),
-            rating: $(cells[2]).text().trim(),
-            link: $(cells[0]).find('a').attr('href') // Extract link from the first cell
+            name: cells.eq(0).text().trim(),
+            type: cells.eq(1).text().trim(),
+            rating: cells.eq(2).text().trim(),
+            link: cells.eq(0).find('a').attr('href') // Extract link from the first cell
         };
 
         // Scrape detailed information
@@ -43,7 +48,9 @@ async function scrapeWhiskeyData() {
         }
 
         whiskeyData.push(rowData);
-    });
+
+        console.log('Whiskey data saved for row', i);
+    }
 
     return whiskeyData;
 }
@@ -58,20 +65,24 @@ async function scrapeWhiskeyDetails(link) {
         const image = $('.o-ribbon-wrap .o-spirit-image').attr('src');
         const stats = {};
         $('.o-spirit-stat-list li').each((index, element) => {
-            const label = $(element).find('p.o-spirit-stat-key').text().trim();
+            let label = $(element).find('span.o-spirit-stat-key').text().trim();
+            label = label.toLowerCase().replace(':', '');
             const value = $(element).find('p.o-spirit-stat-value').text().trim();
             stats[label] = value;
         });
         const houseReviews = {};
         $('.o-spirit-house-review-list-item').each((index, element) => {
-            const label = $(element).find('p.o-spirit-house-review-key').text().trim();
+            let label = $(element).find('span.o-spirit-house-review-key').text().trim();
+            label = label.toLowerCase().replace(':', '');
             const value = $(element).find('p.o-spirit-house-review-value').text().trim();
-            if (label === 'Nose' || label === 'Taste' || label === 'Finish') {
-                // Extract keywords from the paragraph
-                const keywords = extractKeywords(value);
-                houseReviews[label] = keywords;
-            } else {
-                houseReviews[label] = value;
+            if (label) {
+                if (label === 'nose' || label === 'taste' || label === 'finish') {
+                    // Extract keywords from the paragraph
+                    const keywords = extractKeywords(value);
+                    houseReviews[label] = keywords;
+                } else {
+                    houseReviews[label] = value;
+                }
             }
         });
 
@@ -87,28 +98,44 @@ async function scrapeWhiskeyDetails(link) {
 }
 
 // Function to extract keywords from the paragraph
-function extractKeywords(paragraph) {    
+function extractKeywords(paragraph) {
+    // Remove punctuation marks
+    const paragraphWithoutPunctuation = paragraph.replace(/[^\w\s]/g, '');
+
     // Split the paragraph into words
-    const words = paragraph.split(/\s+/);
+    const words = paragraphWithoutPunctuation.split(/\s+/);
 
-    // Filter out the keywords
-    const nose = words.filter(word => keywords.includes(word.toLowerCase()));
-    const taste = words.filter(word => keywords.includes(word.toLowerCase()));
-    const finish = words.filter(word => keywords.includes(word.toLowerCase()));
+    // Create an object to store unique keywords
+    const uniqueKeywords = {};
 
-    return { nose, taste, finish };
+    // Filter out the keywords and add them to the uniqueKeywords object
+    words.forEach(word => {
+        const lowercaseWord = word.toLowerCase();
+        if (keywords.includes(lowercaseWord)) {
+            uniqueKeywords[lowercaseWord] = true;
+        }
+    });
+
+    // Extract the unique keywords into an array
+    const extractedKeywords = Object.keys(uniqueKeywords);
+
+    return extractedKeywords;
 }
 
 async function main() {
-    const whiskeyData = await scrapeWhiskeyData();
-    // Save the data to a JSON file
-    fs.writeFile('whiskey_data.json', JSON.stringify(whiskeyData, null, 2), err => {
-        if (err) {
-            console.error('Error writing file:', err);
-            return;
-        }
-        console.log('Whiskey data has been saved to whiskey_data.json');
-    });
+    try {
+        const whiskeyData = await scrapeWhiskeyData();
+        // Save the data to a JSON file
+        fs.writeFile('whiskey_data.json', JSON.stringify(whiskeyData, null, 2), err => {
+            if (err) {
+                console.error('Error writing file:', err);
+                return;
+            }
+            console.log('Whiskey data has been saved to whiskey_data.json');
+        });
+    } catch (error) {
+        console.error('Error:', error);
+    }
 }
 
-main().catch(err => console.error('Error:', err));
+main();
