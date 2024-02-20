@@ -28,8 +28,7 @@ async function scrapeWhiskeyData() {
     // Find the table and iterate over each row
     const rows = $('.o-archive__table-body .o-archive__table-row');
 
-    // rows.length
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < rows.length; i++) {
         const row = rows.eq(i);
         const cells = row.find('.o-archive__table-cell');
         const rowData = {
